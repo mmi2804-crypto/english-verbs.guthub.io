@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Глаголы">
+<meta name="theme-color" content="#d4500a">
+<link rel="manifest" href="./manifest.json">
+<title>350 Глаголов</title>
+<style>
+/* Встроенные шрифты — для работы offline */
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Mulish:wght@400;600&display=swap');
+
+:root {
+  --bg: #f5f0e8; --card: #ffffff; --ink: #1a1208; --muted: #8a7f70;
+  --accent: #d4500a; --accent2: #2a6b3c; --border: #ddd5c5;
+  --correct: #2a6b3c; --wrong: #c0392b;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: 'Mulish', -apple-system, sans-serif;
+  min-height: 100vh;
+  padding: calc(16px + var(--safe-top)) 16px calc(32px + var(--safe-bottom));
+  display: flex; flex-direction: column; align-items: center;
+}
+header { text-align: center; margin-bottom: 20px; width: 100%; }
+header h1 {
+  font-family: 'Unbounded', -apple-system, sans-serif;
+  font-size: clamp(1.3rem, 4vw, 2rem); font-weight: 900;
+  color: var(--accent); letter-spacing: -1px; line-height: 1.1;
+}
+header p { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+
+.offline-badge {
+  display: none; background: var(--accent2); color: white;
+  font-size: 0.7rem; font-weight: 600; padding: 3px 10px;
+  border-radius: 100px; margin-top: 6px; letter-spacing: 1px;
+}
+.offline-badge.show { display: inline-block; }
+
+.controls {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center; margin-bottom: 16px; width: 100%; max-width: 600px;
+}
+.ctrl-btn {
+  background: var(--card); border: 2px solid var(--border);
+  color: var(--muted); font-family: 'Mulish', sans-serif;
+  font-size: 0.8rem; font-weight: 600; padding: 8px 16px;
+  cursor: pointer; border-radius: 100px; transition: all 0.2s;
+  -webkit-appearance: none;
+}
+.ctrl-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.sets {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center; margin-bottom: 20px; width: 100%; max-width: 600px;
+}
+.set-btn {
+  background: var(--card); border: 2px solid var(--border);
+  color: var(--muted); font-family: 'Mulish', sans-serif;
+  font-size: 0.72rem; font-weight: 600; padding: 5px 12px;
+  cursor: pointer; border-radius: 100px; transition: all 0.2s;
+  -webkit-appearance: none;
+}
+.set-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+.stats {
+  display: flex; gap: 24px; margin-bottom: 16px;
+  font-family: 'Unbounded', sans-serif; font-size: 0.7rem;
+}
+.stat { text-align: center; }
+.stat-val { font-size: 1.5rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.stat-val.green { color: var(--correct); }
+.stat-label { color: var(--muted); font-size: 0.6rem; margin-top: 2px; }
+
+.card {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: 20px; width: 100%; max-width: 600px;
+  padding: 28px 22px; box-shadow: 4px 4px 0 var(--border);
+}
+.progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s; }
+
+.q-num { font-size: 0.7rem; color: var(--muted); font-weight: 600; margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.q-word {
+  font-family: 'Unbounded', -apple-system, sans-serif;
+  font-size: clamp(1.7rem, 6vw, 2.6rem); font-weight: 900;
+  color: var(--ink); line-height: 1.1;
+}
+.q-transcription { font-size: 0.95rem; color: var(--accent2); margin: 5px 0 3px; font-style: italic; }
+.q-hint { font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; margin-top: 4px; }
+
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.opt {
+  background: var(--bg); border: 2px solid var(--border);
+  color: var(--ink); font-family: 'Mulish', sans-serif;
+  font-size: 0.9rem; font-weight: 600; padding: 13px 14px;
+  text-align: left; cursor: pointer; border-radius: 12px;
+  transition: all 0.15s; line-height: 1.3;
+  -webkit-appearance: none; touch-action: manipulation;
+}
+.opt:active:not(:disabled) { transform: scale(0.97); }
+.opt.correct { border-color: var(--correct); color: var(--correct); background: #edfaf2; }
+.opt.wrong { border-color: var(--wrong); color: var(--wrong); background: #fdf0ee; }
+.opt:disabled { cursor: default; }
+
+.explanation {
+  border-left: 4px solid var(--accent); padding: 10px 14px;
+  background: #fff8f3; font-size: 0.84rem; line-height: 1.6;
+  border-radius: 0 8px 8px 0; display: none; margin-top: 14px;
+}
+.explanation.visible { display: block; }
+
+.next-btn {
+  margin-top: 14px; background: var(--accent); color: #fff; border: none;
+  font-family: 'Unbounded', sans-serif; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 1px; padding: 12px 26px; cursor: pointer;
+  border-radius: 100px; transition: opacity 0.2s; display: none;
+  -webkit-appearance: none; touch-action: manipulation;
+}
+.next-btn.visible { display: inline-block; }
+
+.result { text-align: center; display: none; padding: 12px 0; }
+.result.visible { display: block; }
+.result h2 { font-family: 'Unbounded', sans-serif; font-size: 1.4rem; color: var(--accent); margin-bottom: 8px; }
+.result .big { font-family: 'Unbounded', sans-serif; font-size: 3.2rem; font-weight: 900; color: var(--ink); line-height: 1; margin: 10px 0; }
+.result p { color: var(--muted); margin-bottom: 18px; font-size: 0.95rem; }
+.result-btn {
+  background: var(--accent); color: #fff; border: none;
+  font-family: 'Unbounded', sans-serif; font-size: 0.7rem; font-weight: 700;
+  padding: 13px 26px; cursor: pointer; border-radius: 100px;
+  transition: opacity 0.2s; margin: 4px; -webkit-appearance: none;
+}
+.result-btn.outline { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+
+.install-hint {
+  margin-top: 20px; padding: 14px 18px;
+  background: var(--card); border: 2px dashed var(--border);
+  border-radius: 14px; text-align: center;
+  font-size: 0.78rem; color: var(--muted); max-width: 600px; width: 100%;
+  line-height: 1.6;
+}
+.install-hint strong { color: var(--accent); }
+.install-hint.hidden { display: none; }
+
+@media (max-width: 420px) {
+  .options { grid-template-columns: 1fr; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>350 глаголов</h1>
+  <p>Тренажёр · Английский → Русский</p>
+  <span class="offline-badge" id="offlineBadge">✓ Работает офлайн</span>
+</header>
+
+<div class="controls">
+  <button class="ctrl-btn active" id="modeEN" onclick="setMode('en')">🇬🇧 → 🇷🇺 Перевод</button>
+  <button class="ctrl-btn" id="modeRU" onclick="setMode('ru')">🇷🇺 → 🇬🇧 Написание</button>
+</div>
+
+<div class="sets" id="setNav"></div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="statTotal">0</div><div class="stat-label">Всего</div></div>
+  <div class="stat"><div class="stat-val green" id="statRight">0</div><div class="stat-label">Верно</div></div>
+  <div class="stat"><div class="stat-val" id="statPct">0%</div><div class="stat-label">Точность</div></div>
+</div>
+
+<div class="card">
+  <div class="progress-bar"><div class="progress-fill" id="pFill"></div></div>
+  <div id="qArea"></div>
+  <div class="explanation" id="expl"></div>
+  <button class="next-btn" id="nextBtn" onclick="nextQ()">Дальше →</button>
+  <div class="result" id="result">
+    <h2>Раунд завершён!</h2>
+    <div class="big" id="rScore"></div>
+    <p id="rMsg"></p>
+    <button class="result-btn" onclick="restartSame()">Ещё раз этот набор</button><br>
+    <button class="result-btn outline" onclick="restartRandom()" style="margin-top:8px">Случайные 20 слов</button>
+  </div>
+</div>
+
+<div class="install-hint" id="installHint">
+  📱 <strong>Установить как приложение:</strong><br>
+  Нажмите <strong>«Поделиться»</strong> → <strong>«На экран Домой»</strong><br>
+  Приложение будет работать <strong>без интернета</strong>
+</div>
+
+<script>
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js').then(function() {
+      document.getElementById('offlineBadge').classList.add('show');
+    });
+  });
+}
+
+// Hide install hint if already installed as PWA
+if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
+  document.getElementById('installHint').classList.add('hidden');
+  document.getElementById('offlineBadge').classList.add('show');
+}
+
+var ALL = [
+  {e:"like",t:"[laɪk]",r:"нравиться"},{e:"want",t:"[wɒnt]",r:"хотеть"},{e:"need",t:"[niːd]",r:"нуждаться"},{e:"get",t:"[ɡet]",r:"получать"},{e:"listen",t:"[ˈlɪsən]",r:"слушать"},
+  {e:"ask",t:"[ɑːsk]",r:"спрашивать"},{e:"start",t:"[stɑːt]",r:"начинать"},{e:"love",t:"[lʌv]",r:"любить"},{e:"finish",t:"[ˈfɪnɪʃ]",r:"заканчивать"},{e:"come",t:"[kʌm]",r:"приходить"},
+  {e:"understand",t:"[ˌʌndəˈstænd]",r:"понимать"},{e:"live",t:"[lɪv]",r:"жить"},{e:"tell",t:"[tel]",r:"рассказывать"},{e:"put",t:"[pʊt]",r:"класть"},{e:"hate",t:"[heɪt]",r:"ненавидеть"},
+  {e:"work",t:"[wɜːk]",r:"работать"},{e:"teach",t:"[tiːtʃ]",r:"учить"},{e:"play",t:"[pleɪ]",r:"играть"},{e:"buy",t:"[baɪ]",r:"покупать"},{e:"see",t:"[siː]",r:"видеть"},
+  {e:"learn",t:"[lɜːn]",r:"учиться"},{e:"look",t:"[lʊk]",r:"смотреть"},{e:"hear",t:"[hɪə]",r:"слышать"},{e:"let",t:"[let]",r:"позволять"},{e:"help",t:"[help]",r:"помогать"},
+  {e:"read",t:"[riːd]",r:"читать"},{e:"wait",t:"[weɪt]",r:"ждать"},{e:"explain",t:"[ɪkˈspleɪn]",r:"объяснять"},{e:"drink",t:"[drɪŋk]",r:"пить"},{e:"think",t:"[θɪŋk]",r:"думать"},
+  {e:"sleep",t:"[sliːp]",r:"спать"},{e:"know",t:"[nəʊ]",r:"знать"},{e:"speak",t:"[spiːk]",r:"говорить"},{e:"eat",t:"[iːt]",r:"есть"},{e:"write",t:"[raɪt]",r:"писать"},
+  {e:"make",t:"[meɪk]",r:"делать"},{e:"fight",t:"[faɪt]",r:"драться"},{e:"do",t:"[duː]",r:"делать"},{e:"give",t:"[ɡɪv]",r:"давать"},{e:"drive",t:"[draɪv]",r:"водить"},
+  {e:"rest",t:"[rest]",r:"отдыхать"},{e:"take",t:"[teɪk]",r:"брать"},{e:"sit",t:"[sɪt]",r:"сидеть"},{e:"hope",t:"[həʊp]",r:"надеяться"},{e:"pay",t:"[peɪ]",r:"платить"},
+  {e:"run",t:"[rʌn]",r:"бежать"},{e:"go",t:"[ɡəʊ]",r:"идти"},{e:"stay",t:"[steɪ]",r:"оставаться"},{e:"have",t:"[hæv]",r:"иметь"},{e:"answer",t:"[ˈɑːnsə]",r:"отвечать"},
+  {e:"believe",t:"[bɪˈliːv]",r:"верить"},{e:"happen",t:"[ˈhæpən]",r:"случаться"},{e:"bring",t:"[brɪŋ]",r:"приносить"},{e:"allow",t:"[əˈlaʊ]",r:"разрешать"},{e:"forbid",t:"[fəˈbɪd]",r:"запрещать"},
+  {e:"try",t:"[traɪ]",r:"пробовать"},{e:"find",t:"[faɪnd]",r:"находить"},{e:"say",t:"[seɪ]",r:"говорить"},{e:"look for",t:"[lʊk fɔː]",r:"искать"},{e:"fly",t:"[flaɪ]",r:"летать"},
+  {e:"compare",t:"[kəmˈpeə]",r:"сравнивать"},{e:"smile",t:"[smaɪl]",r:"улыбаться"},{e:"use",t:"[juːz]",r:"использовать"},{e:"call",t:"[kɔːl]",r:"звонить"},{e:"laugh",t:"[lɑːf]",r:"смеяться"},
+  {e:"break",t:"[breɪk]",r:"ломать"},{e:"stand",t:"[stænd]",r:"стоять"},{e:"demand",t:"[dɪˈmɑːnd]",r:"требовать"},{e:"pour",t:"[pɔː]",r:"наливать"},{e:"clean",t:"[kliːn]",r:"убирать"},
+  {e:"count",t:"[kaʊnt]",r:"считать"},{e:"dress",t:"[dres]",r:"одеваться"},{e:"walk",t:"[wɔːk]",r:"ходить"},{e:"catch",t:"[kætʃ]",r:"ловить"},{e:"command",t:"[kəˈmɑːnd]",r:"командовать"},
+  {e:"manage",t:"[ˈmænɪdʒ]",r:"справляться"},{e:"build",t:"[bɪld]",r:"строить"},{e:"agree",t:"[əˈɡriː]",r:"соглашаться"},{e:"recommend",t:"[ˌrekəˈmend]",r:"рекомендовать"},{e:"show",t:"[ʃəʊ]",r:"показывать"},
+  {e:"sell",t:"[sel]",r:"продавать"},{e:"wash",t:"[wɒʃ]",r:"мыть"},{e:"keep",t:"[kiːp]",r:"хранить"},{e:"wear",t:"[weə]",r:"носить"},{e:"spend",t:"[spend]",r:"тратить"},
+  {e:"win",t:"[wɪn]",r:"побеждать"},{e:"forget",t:"[fəˈɡet]",r:"забывать"},{e:"talk",t:"[tɔːk]",r:"разговаривать"},{e:"promise",t:"[ˈprɒmɪs]",r:"обещать"},{e:"lose",t:"[luːz]",r:"терять"},
+  {e:"remember",t:"[rɪˈmembə]",r:"помнить"},{e:"mean",t:"[miːn]",r:"означать"},{e:"seem",t:"[siːm]",r:"казаться"},{e:"visit",t:"[ˈvɪzɪt]",r:"посещать"},{e:"prefer",t:"[prɪˈfɜː]",r:"предпочитать"},
+  {e:"thank",t:"[θæŋk]",r:"благодарить"},{e:"study",t:"[ˈstʌdi]",r:"изучать"},{e:"refuse",t:"[rɪˈfjuːz]",r:"отказываться"},{e:"meet",t:"[miːt]",r:"встречать"},{e:"send",t:"[send]",r:"отправлять"},
+  {e:"apply",t:"[əˈplaɪ]",r:"применять"},{e:"punish",t:"[ˈpʌnɪʃ]",r:"наказывать"},{e:"excuse",t:"[ɪkˈskjuːz]",r:"извинять"},{e:"arrange",t:"[əˈreɪndʒ]",r:"организовывать"},{e:"deceive",t:"[dɪˈsiːv]",r:"обманывать"},
+  {e:"suit",t:"[suːt]",r:"подходить"},{e:"feed",t:"[fiːd]",r:"кормить"},{e:"lift",t:"[lɪft]",r:"поднимать"},{e:"steal",t:"[stiːl]",r:"красть"},{e:"cook",t:"[kʊk]",r:"готовить"},
+  {e:"wonder",t:"[ˈwʌndə]",r:"удивляться"},{e:"cut",t:"[kʌt]",r:"резать"},{e:"kill",t:"[kɪl]",r:"убивать"},{e:"check",t:"[tʃek]",r:"проверять"},{e:"die",t:"[daɪ]",r:"умирать"},
+  {e:"advise",t:"[ədˈvaɪz]",r:"советовать"},{e:"shoot",t:"[ʃuːt]",r:"стрелять"},{e:"worry",t:"[ˈwʌri]",r:"беспокоиться"},{e:"present",t:"[prɪˈzent]",r:"представлять"},{e:"hold",t:"[həʊld]",r:"держать"},
+  {e:"make clear",t:"[meɪk klɪə]",r:"объяснять"},{e:"change",t:"[tʃeɪndʒ]",r:"менять"},{e:"argue",t:"[ˈɑːɡjuː]",r:"спорить"},{e:"shout",t:"[ʃaʊt]",r:"кричать"},{e:"open",t:"[ˈəʊpən]",r:"открывать"},
+  {e:"feel",t:"[fiːl]",r:"чувствовать"},{e:"leave",t:"[liːv]",r:"уходить"},{e:"depend",t:"[dɪˈpend]",r:"зависеть"},{e:"upset",t:"[ʌpˈset]",r:"расстраивать"},{e:"fall",t:"[fɔːl]",r:"падать"},
+  {e:"sign",t:"[saɪn]",r:"подписывать"},{e:"dream",t:"[driːm]",r:"мечтать"},{e:"choose",t:"[tʃuːz]",r:"выбирать"},{e:"lie",t:"[laɪ]",r:"лгать / лежать"},{e:"deal",t:"[diːl]",r:"договариваться"},
+  {e:"enter",t:"[ˈentə]",r:"входить"},{e:"convince",t:"[kənˈvɪns]",r:"убеждать"},{e:"prove",t:"[pruːv]",r:"доказывать"},{e:"decide",t:"[dɪˈsaɪd]",r:"решать"},{e:"repeat",t:"[rɪˈpiːt]",r:"повторять"},
+  {e:"scare",t:"[skeə]",r:"пугать"},{e:"doubt",t:"[daʊt]",r:"сомневаться"},{e:"watch",t:"[wɒtʃ]",r:"наблюдать"},{e:"harm",t:"[hɑːm]",r:"вредить"},{e:"carry",t:"[ˈkæri]",r:"нести"},
+  {e:"fail",t:"[feɪl]",r:"проваливаться"},{e:"close",t:"[kləʊz]",r:"закрывать"},{e:"spoil",t:"[spɔɪl]",r:"портить"},{e:"hurry",t:"[ˈhʌri]",r:"торопиться"},{e:"save",t:"[seɪv]",r:"спасать"},
+  {e:"move",t:"[muːv]",r:"двигаться"},{e:"breathe",t:"[briːð]",r:"дышать"},{e:"cry",t:"[kraɪ]",r:"плакать"},{e:"improve",t:"[ɪmˈpruːv]",r:"улучшать"},{e:"disturb",t:"[dɪˈstɜːb]",r:"беспокоить"},
+  {e:"hurt",t:"[hɜːt]",r:"причинять боль"},{e:"translate",t:"[trænsˈleɪt]",r:"переводить"},{e:"respect",t:"[rɪˈspekt]",r:"уважать"},{e:"begin",t:"[bɪˈɡɪn]",r:"начинать"},{e:"matter",t:"[ˈmætə]",r:"иметь значение"},
+  {e:"increase",t:"[ɪnˈkriːs]",r:"увеличивать"},{e:"miss",t:"[mɪs]",r:"скучать"},{e:"destroy",t:"[dɪˈstrɔɪ]",r:"разрушать"},{e:"throw",t:"[θrəʊ]",r:"бросать"},{e:"defend",t:"[dɪˈfend]",r:"защищать"},
+  {e:"touch",t:"[tʌtʃ]",r:"трогать"},{e:"strive",t:"[straɪv]",r:"стремиться"},{e:"compete",t:"[kəmˈpiːt]",r:"соревноваться"},{e:"wish",t:"[wɪʃ]",r:"желать"},{e:"succeed",t:"[səkˈsiːd]",r:"добиваться успеха"},
+  {e:"prepare",t:"[prɪˈpeə]",r:"готовиться"},{e:"order",t:"[ˈɔːdə]",r:"заказывать"},{e:"appear",t:"[əˈpɪə]",r:"появляться"},{e:"owe",t:"[əʊ]",r:"быть должным"},{e:"cost",t:"[kɒst]",r:"стоить"},
+  {e:"exist",t:"[ɪɡˈzɪst]",r:"существовать"},{e:"invite",t:"[ɪnˈvaɪt]",r:"приглашать"},{e:"knock",t:"[nɒk]",r:"стучать"},{e:"repair",t:"[rɪˈpeə]",r:"ремонтировать"},{e:"hide",t:"[haɪd]",r:"прятать"},
+  {e:"pass",t:"[pɑːs]",r:"проходить"},{e:"forgive",t:"[fəˈɡɪv]",r:"прощать"},{e:"grow",t:"[ɡrəʊ]",r:"расти"},{e:"burn",t:"[bɜːn]",r:"гореть"},{e:"remind",t:"[rɪˈmaɪnd]",r:"напоминать"},
+  {e:"turn",t:"[tɜːn]",r:"поворачивать"},{e:"annoy",t:"[əˈnɔɪ]",r:"раздражать"},{e:"complain",t:"[kəmˈpleɪn]",r:"жаловаться"},{e:"pretend",t:"[prɪˈtend]",r:"притворяться"},{e:"connect",t:"[kəˈnekt]",r:"соединять"},
+  {e:"practice",t:"[ˈpræktɪs]",r:"практиковаться"},{e:"switch on",t:"[swɪtʃ ɒn]",r:"включать"},{e:"describe",t:"[dɪˈskraɪb]",r:"описывать"},{e:"put on",t:"[pʊt ɒn]",r:"надевать"},{e:"solve",t:"[sɒlv]",r:"решать"},
+  {e:"smell",t:"[smel]",r:"пахнуть"},{e:"lead",t:"[liːd]",r:"вести"},{e:"follow",t:"[ˈfɒləʊ]",r:"следовать"},{e:"sound",t:"[saʊnd]",r:"звучать"},{e:"travel",t:"[ˈtrævəl]",r:"путешествовать"},
+  {e:"enjoy",t:"[ɪnˈdʒɔɪ]",r:"наслаждаться"},{e:"discuss",t:"[dɪˈskʌs]",r:"обсуждать"},{e:"congratulate",t:"[kənˈɡrætʃuleɪt]",r:"поздравлять"},{e:"guess",t:"[ɡes]",r:"угадывать"},{e:"conceal",t:"[kənˈsiːl]",r:"скрывать"},
+  {e:"cough",t:"[kɒf]",r:"кашлять"},{e:"pull",t:"[pʊl]",r:"тянуть"},{e:"insist",t:"[ɪnˈsɪst]",r:"настаивать"},{e:"tear",t:"[teə]",r:"рвать"},{e:"push",t:"[pʊʃ]",r:"толкать"},
+  {e:"sneeze",t:"[sniːz]",r:"чихать"},{e:"achieve",t:"[əˈtʃiːv]",r:"достигать"},{e:"envy",t:"[ˈenvi]",r:"завидовать"},{e:"hint",t:"[hɪnt]",r:"намекать"},{e:"own",t:"[əʊn]",r:"владеть"},
+  {e:"multiply",t:"[ˈmʌltɪplaɪ]",r:"умножать"},{e:"blame",t:"[bleɪm]",r:"винить"},{e:"concern",t:"[kənˈsɜːn]",r:"беспокоить"},{e:"suffer",t:"[ˈsʌfə]",r:"страдать"},{e:"behave",t:"[bɪˈheɪv]",r:"вести себя"},
+  {e:"add",t:"[æd]",r:"добавлять"},{e:"fix",t:"[fɪks]",r:"чинить"},{e:"become",t:"[bɪˈkʌm]",r:"становиться"},{e:"divide",t:"[dɪˈvaɪd]",r:"делить"},{e:"accept",t:"[əkˈsept]",r:"принимать"},
+  {e:"differ",t:"[ˈdɪfə]",r:"отличаться"},{e:"mix",t:"[mɪks]",r:"смешивать"},{e:"paint",t:"[peɪnt]",r:"рисовать"},{e:"notice",t:"[ˈnəʊtɪs]",r:"замечать"},{e:"bite",t:"[baɪt]",r:"кусать"},
+  {e:"subtract",t:"[səbˈtrækt]",r:"вычитать"},{e:"belong",t:"[bɪˈlɒŋ]",r:"принадлежать"},{e:"swear",t:"[sweə]",r:"клясться"},{e:"care",t:"[keə]",r:"заботиться"},{e:"offend",t:"[əˈfend]",r:"обижать"},
+  {e:"imagine",t:"[ɪˈmædʒɪn]",r:"представлять"},{e:"attack",t:"[əˈtæk]",r:"атаковать"},{e:"hit",t:"[hɪt]",r:"ударять"},{e:"avoid",t:"[əˈvɔɪd]",r:"избегать"},{e:"please",t:"[pliːz]",r:"радовать"},
+  {e:"draw",t:"[drɔː]",r:"рисовать"},{e:"invent",t:"[ɪnˈvent]",r:"изобретать"},{e:"get rid",t:"[ɡet rɪd]",r:"избавляться"},{e:"beat",t:"[biːt]",r:"побеждать"},{e:"fill",t:"[fɪl]",r:"наполнять"},
+  {e:"chew",t:"[tʃuː]",r:"жевать"},{e:"force",t:"[fɔːs]",r:"заставлять"},{e:"set",t:"[set]",r:"устанавливать"},{e:"pray",t:"[preɪ]",r:"молиться"},{e:"amaze",t:"[əˈmeɪz]",r:"удивлять"},
+  {e:"celebrate",t:"[ˈselɪbreɪt]",r:"праздновать"},{e:"hire",t:"[haɪə]",r:"нанимать"},{e:"seek",t:"[siːk]",r:"искать"},{e:"cause",t:"[kɔːz]",r:"вызывать"},{e:"praise",t:"[preɪz]",r:"хвалить"},
+  {e:"consist",t:"[kənˈsɪst]",r:"состоять"},{e:"earn",t:"[ɜːn]",r:"зарабатывать"},{e:"consider",t:"[kənˈsɪdə]",r:"рассматривать"},{e:"suspect",t:"[səˈspekt]",r:"подозревать"},{e:"survive",t:"[səˈvaɪv]",r:"выживать"},
+  {e:"interrupt",t:"[ˌɪntəˈrʌpt]",r:"прерывать"},{e:"brag",t:"[bræɡ]",r:"хвастаться"},{e:"rob",t:"[rɒb]",r:"грабить"},{e:"create",t:"[kriˈeɪt]",r:"создавать"},{e:"act",t:"[ækt]",r:"действовать"},
+  {e:"continue",t:"[kənˈtɪnjuː]",r:"продолжать"},{e:"spell",t:"[spel]",r:"произносить по буквам"},{e:"quit",t:"[kwɪt]",r:"бросать"},{e:"warn",t:"[wɔːn]",r:"предупреждать"},{e:"threaten",t:"[ˈθretn]",r:"угрожать"},
+  {e:"award",t:"[əˈwɔːd]",r:"награждать"},{e:"rent",t:"[rent]",r:"арендовать"},{e:"offer",t:"[ˈɒfə]",r:"предлагать"},{e:"develop",t:"[dɪˈveləp]",r:"развивать"},{e:"afford",t:"[əˈfɔːd]",r:"позволить себе"},
+  {e:"wake",t:"[weɪk]",r:"просыпаться"},{e:"marry",t:"[ˈmæri]",r:"жениться"},{e:"cover",t:"[ˈkʌvə]",r:"покрывать"},{e:"express",t:"[ɪkˈspres]",r:"выражать"},{e:"yawn",t:"[jɔːn]",r:"зевать"},
+  {e:"treat",t:"[triːt]",r:"угощать"},{e:"wound",t:"[wuːnd]",r:"ранить"},{e:"fulfill",t:"[fʊlˈfɪl]",r:"выполнять"},{e:"hang",t:"[hæŋ]",r:"вешать"},{e:"delay",t:"[dɪˈleɪ]",r:"откладывать"},
+  {e:"beware",t:"[bɪˈweə]",r:"остерегаться"},{e:"deny",t:"[dɪˈnaɪ]",r:"отрицать"},{e:"object",t:"[əbˈdʒekt]",r:"возражать"},{e:"bake",t:"[beɪk]",r:"печь"},{e:"support",t:"[səˈpɔːt]",r:"поддерживать"},
+  {e:"mention",t:"[ˈmenʃən]",r:"упоминать"},{e:"realize",t:"[ˈrɪəlaɪz]",r:"осознавать"},{e:"dare",t:"[deə]",r:"осмеливаться"},{e:"invest",t:"[ɪnˈvest]",r:"инвестировать"},{e:"assemble",t:"[əˈsembəl]",r:"собирать"},
+  {e:"spit",t:"[spɪt]",r:"плевать"},{e:"join",t:"[dʒɔɪn]",r:"присоединяться"},{e:"advertise",t:"[ˈædvətaɪz]",r:"рекламировать"},{e:"interfere",t:"[ˌɪntəˈfɪə]",r:"вмешиваться"},{e:"influence",t:"[ˈɪnfluəns]",r:"влиять"},
+  {e:"overcome",t:"[ˌəʊvəˈkʌm]",r:"преодолевать"},{e:"endure",t:"[ɪnˈdjʊə]",r:"терпеть"},{e:"cure",t:"[kjʊə]",r:"лечить"},{e:"deprive",t:"[dɪˈpraɪv]",r:"лишать"},{e:"sigh",t:"[saɪ]",r:"вздыхать"},
+  {e:"nod",t:"[nɒd]",r:"кивать"},{e:"shake",t:"[ʃeɪk]",r:"трясти"},{e:"deliver",t:"[dɪˈlɪvə]",r:"доставлять"},{e:"surrender",t:"[səˈrendə]",r:"сдаваться"},{e:"release",t:"[rɪˈliːs]",r:"освобождать"},
+  {e:"obey",t:"[əˈbeɪ]",r:"подчиняться"},{e:"bless",t:"[bles]",r:"благословлять"},{e:"enroll",t:"[ɪnˈrəʊl]",r:"записываться"},{e:"mock",t:"[mɒk]",r:"насмехаться"},{e:"engage",t:"[ɪnˈɡeɪdʒ]",r:"вовлекать"},
+  {e:"inspire",t:"[ɪnˈspaɪə]",r:"вдохновлять"},{e:"flee",t:"[fliː]",r:"убегать"},{e:"blow",t:"[bləʊ]",r:"дуть"},{e:"scratch",t:"[skrætʃ]",r:"царапать"},{e:"wrap",t:"[ræp]",r:"заворачивать"},
+  {e:"quarrel",t:"[ˈkwɒrəl]",r:"ссориться"},{e:"whistle",t:"[ˈwɪsəl]",r:"свистеть"},{e:"vote",t:"[vəʊt]",r:"голосовать"},{e:"attract",t:"[əˈtrækt]",r:"привлекать"},{e:"distract",t:"[dɪˈstrækt]",r:"отвлекать"},
+  {e:"whisper",t:"[ˈwɪspə]",r:"шептать"},{e:"replace",t:"[rɪˈpleɪs]",r:"заменять"},{e:"condemn",t:"[kənˈdem]",r:"осуждать"},{e:"hesitate",t:"[ˈhezɪteɪt]",r:"колебаться"},{e:"pick",t:"[pɪk]",r:"выбирать"},
+  {e:"impress",t:"[ɪmˈpres]",r:"впечатлять"},{e:"resist",t:"[rɪˈzɪst]",r:"сопротивляться"},{e:"repel",t:"[rɪˈpel]",r:"отталкивать"},{e:"combine",t:"[kəmˈbaɪn]",r:"сочетать"},{e:"accompany",t:"[əˈkʌmpəni]",r:"сопровождать"},
+  {e:"measure",t:"[ˈmeʒə]",r:"измерять"},{e:"lend",t:"[lend]",r:"одалживать"},{e:"borrow",t:"[ˈbɒrəʊ]",r:"брать в долг"},{e:"dig",t:"[dɪɡ]",r:"копать"},{e:"encounter",t:"[ɪnˈkaʊntə]",r:"сталкиваться"},
+  {e:"defeat",t:"[dɪˈfiːt]",r:"побеждать"},{e:"load",t:"[ləʊd]",r:"загружать"},{e:"approve",t:"[əˈpruːv]",r:"одобрять"},{e:"regret",t:"[rɪˈɡret]",r:"сожалеть"},{e:"indicate",t:"[ˈɪndɪkeɪt]",r:"указывать"},
+  {e:"entertain",t:"[ˌentəˈteɪn]",r:"развлекать"},{e:"supervise",t:"[ˈsuːpəvaɪz]",r:"контролировать"},{e:"pronounce",t:"[prəˈnaʊns]",r:"произносить"},{e:"disapprove",t:"[ˌdɪsəˈpruːv]",r:"не одобрять"},{e:"itch",t:"[ɪtʃ]",r:"чесаться"}
+];
+
+var SETS = [
+  {label:"1–50",   from:0,   to:50},
+  {label:"51–100", from:50,  to:100},
+  {label:"101–150",from:100, to:150},
+  {label:"151–200",from:150, to:200},
+  {label:"201–250",from:200, to:250},
+  {label:"251–300",from:250, to:300},
+  {label:"301–350",from:300, to:350},
+  {label:"Все 350",from:0,   to:350}
+];
+
+var mode = 'en', currentSet = 0, questions = [], qIdx = 0, score = 0, total = 0, answered = false;
+
+var nav = document.getElementById('setNav');
+SETS.forEach(function(s, i) {
+  var btn = document.createElement('button');
+  btn.className = 'set-btn' + (i === 0 ? ' active' : '');
+  btn.textContent = s.label;
+  btn.addEventListener('click', function() { selectSet(i); });
+  nav.appendChild(btn);
+});
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('modeEN').classList.toggle('active', m === 'en');
+  document.getElementById('modeRU').classList.toggle('active', m === 'ru');
+  restart();
+}
+function selectSet(i) {
+  currentSet = i;
+  document.querySelectorAll('.set-btn').forEach(function(b, j) { b.classList.toggle('active', j === i); });
+  restart();
+}
+function shuffle(arr) { return arr.slice().sort(function() { return Math.random() - 0.5; }); }
+function getPool() { var s = SETS[currentSet]; return ALL.slice(s.from, s.to); }
+
+function restart() {
+  var pool = getPool();
+  questions = pool.length > 30 ? shuffle(pool).slice(0, 20) : shuffle(pool);
+  qIdx = 0; score = 0; total = 0; answered = false;
+  document.getElementById('result').classList.remove('visible');
+  updateStats(); renderQ();
+}
+function restartSame() { restart(); }
+function restartRandom() {
+  currentSet = SETS.length - 1;
+  document.querySelectorAll('.set-btn').forEach(function(b, j) { b.classList.toggle('active', j === currentSet); });
+  restart();
+}
+function updateStats() {
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statRight').textContent = score;
+  document.getElementById('statPct').textContent = total > 0 ? Math.round(score/total*100) + '%' : '0%';
+}
+function renderQ() {
+  if (qIdx >= questions.length) { showResult(); return; }
+  var q = questions[qIdx];
+  answered = false;
+  document.getElementById('pFill').style.width = (qIdx / questions.length * 100) + '%';
+  document.getElementById('expl').classList.remove('visible');
+  document.getElementById('expl').innerHTML = '';
+  document.getElementById('nextBtn').classList.remove('visible');
+  var area = document.getElementById('qArea');
+  area.innerHTML = '';
+
+  var numDiv = document.createElement('div');
+  numDiv.className = 'q-num';
+  numDiv.textContent = 'Вопрос ' + (qIdx+1) + ' из ' + questions.length;
+  area.appendChild(numDiv);
+
+  var wordDiv = document.createElement('div');
+  wordDiv.className = 'q-word';
+  wordDiv.textContent = mode === 'en' ? q.e : q.r;
+  area.appendChild(wordDiv);
+
+  if (mode === 'en') {
+    var td = document.createElement('div');
+    td.className = 'q-transcription';
+    td.textContent = q.t;
+    area.appendChild(td);
+  }
+
+  var hd = document.createElement('div');
+  hd.className = 'q-hint';
+  hd.textContent = mode === 'en' ? 'Выберите перевод на русский' : 'Выберите перевод на английский';
+  area.appendChild(hd);
+
+  var pool = getPool();
+  var wrong = shuffle(pool.filter(function(w) { return w.e !== q.e; })).slice(0, 3);
+  var opts = shuffle([q].concat(wrong));
+  var optDiv = document.createElement('div');
+  optDiv.className = 'options';
+  opts.forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = mode === 'en' ? opt.r : opt.e;
+    var correct = opt.e === q.e;
+    btn.addEventListener('click', function() { checkAnswer(btn, correct, q); });
+    optDiv.appendChild(btn);
+  });
+  area.appendChild(optDiv);
+}
+function checkAnswer(btn, isCorrect, q) {
+  if (answered) return;
+  answered = true; total++;
+  document.querySelectorAll('.opt').forEach(function(b) {
+    b.disabled = true;
+    if (b.textContent === (mode === 'en' ? q.r : q.e)) b.classList.add('correct');
+  });
+  if (isCorrect) {
+    score++;
+    document.getElementById('expl').innerHTML = '✅ Верно! <strong>' + q.e + '</strong> ' + q.t + ' = ' + q.r;
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('expl').innerHTML = '❌ Неверно. <strong>' + q.e + '</strong> ' + q.t + ' = ' + q.r;
+  }
+  document.getElementById('expl').classList.add('visible');
+  document.getElementById('nextBtn').classList.add('visible');
+  updateStats();
+}
+function nextQ() { qIdx++; renderQ(); }
+function showResult() {
+  document.getElementById('qArea').innerHTML = '';
+  document.getElementById('expl').classList.remove('visible');
+  document.getElementById('nextBtn').classList.remove('visible');
+  document.getElementById('pFill').style.width = '100%';
+  var pct = Math.round(score / questions.length * 100);
+  document.getElementById('rScore').textContent = score + '/' + questions.length;
+  document.getElementById('rMsg').textContent =
+    pct >= 90 ? '🔥 Превосходно! Вы знаете эти слова!' :
+    pct >= 70 ? '👍 Хороший результат! Повторите ошибки.' :
+    pct >= 50 ? '💪 Неплохо! Стоит потренироваться ещё.' :
+    '📚 Продолжайте учить — всё получится!';
+  document.getElementById('result').classList.add('visible');
+}
+restart();
+</script>
+</body>
+</html>
