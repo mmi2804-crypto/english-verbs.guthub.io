@@ -1,0 +1,19 @@
+{
+  "name": "350 Глаголов",
+  "short_name": "Глаголы",
+  "description": "Тренажёр английских глаголов — 350 слов с транскрипцией",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f0e8",
+  "theme_color": "#d4500a",
+  "orientation": "portrait",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%23d4500a'/><text x='96' y='130' font-size='110' text-anchor='middle' fill='white'>📚</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
